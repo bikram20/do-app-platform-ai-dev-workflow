@@ -32,7 +32,7 @@ App Platform deploys this dev container → Container clones your app repo → R
            ▼
 ┌─────────────────────────────────┐
 │  Dev Container (this template)  │
-│  • Syncs repo every 60s         │
+│  • Syncs repo every 30s         │
 │  • Runs dev_startup.sh          │
 │  • Routes :8080 → your app      │
 │  • Routes :9090 → health (temp) │
@@ -84,7 +84,7 @@ Configure these in **App Platform UI → Settings → Environment Variables**. T
 | `GITHUB_TOKEN` | No | - | GitHub token for private repos (stored as secret) |
 | `RUN_COMMAND` | No | auto-detect | Command to start your app (e.g., `bash dev_startup.sh`) |
 | `WORKSPACE_PATH` | No | `/workspaces/app` | Where to sync your repo |
-| `GITHUB_SYNC_INTERVAL` | No | `60` | How often to sync repo (seconds) |
+| `GITHUB_SYNC_INTERVAL` | No | `30` | How often to sync repo (seconds) |
 | `ENABLE_DEV_HEALTH` | No | `true` | Bootstrap health server; set `false` when your app has health endpoint |
 
 \* Not required for initial deploy, but needed to run your application.
@@ -129,7 +129,7 @@ envs:
 1. Sync script clones the full monorepo to `/tmp/monorepo-cache/`
 2. Only the specified folder is synced to `/workspaces/app`
 3. Your `dev_startup.sh` runs from within that folder
-4. Changes sync every 15-60 seconds based on `GITHUB_SYNC_INTERVAL`
+4. Changes sync every 30 seconds by default (configurable via `GITHUB_SYNC_INTERVAL`)
 
 **Use cases**:
 - Multiple services in one repository

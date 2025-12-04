@@ -30,7 +30,7 @@ Docs map: `README.md` = how humans use it, `CUSTOMIZATION.md` = how to fork/exte
 - `RUN_COMMAND="bash dev_startup.sh"`; repo `dev_startup.sh`/`startup.sh` is used if present and `RUN_COMMAND` is empty.
 - Built-in `/dev_health` (lightweight Go binary, ~2MB) is just a bootstrap aid. Move health to the app, set `ENABLE_DEV_HEALTH=false`, and disable unused runtimes for smaller images.
 - App listens on `8080`; health server listens on `9090`.
-- Sync interval: `60` seconds unless the user asks otherwise.
+- Sync interval: `30` seconds unless the user asks otherwise.
 
 ## Reminders
 

@@ -13,6 +13,8 @@ import (
 // WelcomePageData holds data for the welcome page template
 type WelcomePageData struct {
 	RepoURL          string
+	RepoFolder       string
+	RepoBranch       string
 	RunCommand       string
 	WorkspacePath    string
 	SyncInterval     string
@@ -31,9 +33,11 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 	// Gather environment data
 	data := WelcomePageData{
 		RepoURL:         getEnvOrDefault("GITHUB_REPO_URL", "not set"),
+		RepoFolder:      getEnvOrDefault("GITHUB_REPO_FOLDER", "not set"),
+		RepoBranch:      getEnvOrDefault("GITHUB_BRANCH", "not set"),
 		RunCommand:       getEnvOrDefault("RUN_COMMAND", "not set"),
 		WorkspacePath:    getEnvOrDefault("WORKSPACE_PATH", "/workspaces/app"),
-		SyncInterval:     getEnvOrDefault("GITHUB_SYNC_INTERVAL", "60"),
+		SyncInterval:     getEnvOrDefault("GITHUB_SYNC_INTERVAL", "30"),
 		EnableDevHealth:  getEnvOrDefault("ENABLE_DEV_HEALTH", "true"),
 		Timestamp:        time.Now().UTC().Format(time.RFC3339),
 	}
@@ -248,6 +252,33 @@ const welcomePageHTML = `<!DOCTYPE html>
             background: #f8d7da;
             color: #721c24;
         }
+        .hint-text {
+            color: #888;
+            font-style: italic;
+            font-size: 0.85em;
+            margin-left: 8px;
+        }
+        .ai-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+            border-left: 4px solid #fff;
+        }
+        .ai-section h2 {
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            margin-bottom: 15px;
+        }
+        .ai-section p {
+            margin: 10px 0;
+        }
+        .ai-section a {
+            color: #fff;
+            text-decoration: underline;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -260,6 +291,16 @@ const welcomePageHTML = `<!DOCTYPE html>
                 <span class="status-label">Repository URL:</span>
                 <span class="status-value">{{.RepoURL}}</span>
                 {{if eq .RepoURL "not set"}}<span class="badge badge-danger">Required</span>{{else}}<span class="badge badge-success">Configured</span>{{end}}
+            </div>
+            <div class="status-item">
+                <span class="status-label">Repository Folder:</span>
+                <span class="status-value">{{.RepoFolder}}</span>
+                {{if eq .RepoFolder "not set"}}<span class="hint-text">(leave blank for root folder)</span>{{end}}
+            </div>
+            <div class="status-item">
+                <span class="status-label">Branch:</span>
+                <span class="status-value">{{.RepoBranch}}</span>
+                {{if eq .RepoBranch "not set"}}<span class="hint-text">(leave blank for main branch)</span>{{end}}
             </div>
             <div class="status-item">
                 <span class="status-label">Run Command:</span>
@@ -286,21 +327,44 @@ const welcomePageHTML = `<!DOCTYPE html>
             
             <div class="step">
                 <span class="step-number">1</span>
-                <strong>Set Your Repository URL</strong>
-                <p>Go to App Platform UI → Settings → Environment Variables and set:</p>
+                <strong>Bulk Configuration (Recommended)</strong>
+                <p>The fastest way to configure your app is using the App Platform bulk editor with pre-configured .env.example files from app-examples folder:</p>
+                <ul style="margin: 10px 0 10px 20px;">
+                    <li><strong>Next.js apps:</strong> <a href="https://github.com/bikram20/do-app-platform-ai-dev-workflow/blob/main/hot-reload-template/app-examples/nextjs-sample-app/.env.example" target="_blank">nextjs .env.example</a></li>
+                    <li><strong>Python FastAPI apps:</strong> <a href="https://github.com/bikram20/do-app-platform-ai-dev-workflow/blob/main/hot-reload-template/app-examples/python-fastapi-sample/.env.example" target="_blank">python-fastapi .env.example</a></li>
+                    <li><strong>Go apps:</strong> <a href="https://github.com/bikram20/do-app-platform-ai-dev-workflow/blob/main/hot-reload-template/app-examples/go-sample-app/.env.example" target="_blank">go .env.example</a></li>
+                </ul>
+                <p><strong>How to use:</strong></p>
+                <ol style="margin: 10px 0 10px 20px;">
+                    <li>Open the .env.example file for your framework</li>
+                    <li>Copy all contents</li>
+                    <li>In App Platform UI → Settings → click "Bulk Editor"</li>
+                    <li>Paste the contents and adjust GITHUB_REPO_URL to your repository</li>
+                </ol>
+                <p><strong>Advantage:</strong> Copy-paste all settings at once instead of adding them one by one.</p>
+                <p style="margin-top: 15px;"><strong>Or set variables individually:</strong></p>
                 <div class="code-block">
-                    <code><span class="env-var">GITHUB_REPO_URL</span> = <span class="value">https://github.com/your-username/your-repo.git</span></code>
+                    <code><span class="env-var">GITHUB_REPO_URL</span> = <span class="value">https://github.com/your-username/your-repo.git</span><br>
+<span class="env-var">GITHUB_REPO_FOLDER</span> = <span class="value">subfolder/path</span> <span class="hint-text">(leave blank for root folder)</span><br>
+<span class="env-var">GITHUB_BRANCH</span> = <span class="value">main</span> <span class="hint-text">(leave blank for main branch)</span></code>
                 </div>
             </div>
 
             <div class="step">
                 <span class="step-number">2</span>
                 <strong>Configure Your Startup Command</strong>
-                <p>Option A: Set RUN_COMMAND environment variable:</p>
+                <p><strong>Both are needed:</strong> Set RUN_COMMAND AND create dev_startup.sh in your repository</p>
                 <div class="code-block">
                     <code><span class="env-var">RUN_COMMAND</span> = <span class="value">bash dev_startup.sh</span></code>
                 </div>
-                <p style="margin-top: 10px;">Option B: Add a <code>dev_startup.sh</code> script to your repository root:</p>
+                <p style="margin-top: 15px;"><strong>Why dev_startup.sh is better than a 1-liner RUN_COMMAND:</strong></p>
+                <ul style="margin: 10px 0 10px 20px;">
+                    <li>You control and version it in your repo (not locked in App Platform settings)</li>
+                    <li>Easier to update without redeploying the container</li>
+                    <li>Can include complex logic, error handling, and dependency management</li>
+                    <li>Changes sync automatically every 30s with your code</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>Example dev_startup.sh for Next.js:</strong></p>
                 <div class="code-block">
                     <code>#!/bin/bash<br>cd /workspaces/app<br>npm install<br>npm run dev -- --hostname 0.0.0.0 --port 8080</code>
                 </div>
@@ -308,8 +372,9 @@ const welcomePageHTML = `<!DOCTYPE html>
 
             <div class="step">
                 <span class="step-number">3</span>
-                <strong>Configure Runtime Build Arguments</strong>
+                <strong>Configure Build Arguments (Build-time)</strong>
                 <p>Go to App Platform UI → Settings → Build Arguments and enable only what you need:</p>
+                <p style="margin-top: 10px;"><em>Note: These are BUILD_TIME scope arguments that determine which language runtimes are installed during container build.</em></p>
                 <div class="code-block">
                     <code><span class="env-var">INSTALL_NODE</span> = <span class="value">true</span>  # For Node.js/Next.js apps<br>
 <span class="env-var">INSTALL_PYTHON</span> = <span class="value">true</span>  # For Python/FastAPI apps<br>
@@ -323,6 +388,20 @@ const welcomePageHTML = `<!DOCTYPE html>
                 <strong>Redeploy Your App</strong>
                 <p>After setting environment variables, trigger a new deployment to apply changes.</p>
             </div>
+        </div>
+
+        <div class="ai-section">
+            <h2>🤖 Automate Setup with AI Assistants</h2>
+            <p><strong>Skip manual configuration!</strong> AI assistants can automate the entire deployment process:</p>
+            <ul style="margin: 15px 0 15px 20px;">
+                <li>Automatically create and configure your app on App Platform</li>
+                <li>Set all required environment variables and build arguments</li>
+                <li>Generate dev_startup.sh scripts tailored to your application</li>
+                <li>Monitor deployment and troubleshoot issues</li>
+                <li>Execute commands in your running container for debugging</li>
+            </ul>
+            <p style="margin-top: 15px;"><strong>Supported AI assistants:</strong> Claude Code, GitHub Copilot, Cursor, or any agent that can execute commands</p>
+            <p><strong>Get started:</strong> See the <a href="https://github.com/bikram20/do-app-platform-ai-dev-workflow/blob/main/hot-reload-template/agent.md" target="_blank">agent.md playbook</a> for detailed automation instructions.</p>
         </div>
         {{else}}
         <div class="success">
@@ -371,7 +450,7 @@ const welcomePageHTML = `<!DOCTYPE html>
 
             <div class="warning">
                 <strong>🔄 Hot Reload is Automatic</strong>
-                <p>Your repository syncs every {{.SyncInterval}} seconds. Use a dev server with hot reload (like <code>npm run dev</code>, <code>uvicorn --reload</code>, or <code>air</code>) to see changes without restarting.</p>
+                <p>Your repository syncs every {{.SyncInterval}} seconds (configurable via GITHUB_SYNC_INTERVAL environment variable, default is 30s). Use a dev server with hot reload (like <code>npm run dev</code>, <code>uvicorn --reload</code>, or <code>air</code>) to see changes without restarting.</p>
             </div>
 
             <div class="warning">
