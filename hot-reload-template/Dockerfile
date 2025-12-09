@@ -256,16 +256,21 @@ RUN if [ "$INSTALL_RUST" = "true" ]; then \
     fi
 
 RUN if [ "$INSTALL_RUBY" = "true" ]; then \
-        cp -r /root/.rbenv /home/devcontainer/.rbenv \
-        && chown -R devcontainer:devcontainer /home/devcontainer/.rbenv \
-        # Fix ALL files that reference /root/.rbenv/ paths to use /home/devcontainer/.rbenv/
-        # Search all files (text and binary) and replace path references
-        && if [ -d "/home/devcontainer/.rbenv/versions" ]; then \
-            find /home/devcontainer/.rbenv/versions -type f \
-                -exec grep -l "/root/.rbenv/" {} \; 2>/dev/null | while read file; do \
-                    sed -i 's|/root/\.rbenv/|/home/devcontainer/.rbenv/|g' "$file" 2>/dev/null || true; \
-                done; \
-        fi; \
+        # Install Ruby directly for devcontainer user (avoid path issues from copying)
+        # First install rbenv and ruby-build for devcontainer user
+        && sudo -u devcontainer bash -c ' \
+            export HOME=/home/devcontainer \
+            && git clone https://github.com/rbenv/rbenv.git /home/devcontainer/.rbenv \
+            && git clone https://github.com/rbenv/ruby-build.git /home/devcontainer/.rbenv/plugins/ruby-build \
+            && cd /home/devcontainer/.rbenv && src/configure && make -C src \
+            && export PATH="/home/devcontainer/.rbenv/bin:$PATH" \
+            && eval "$(rbenv init -)" \
+            && for version in $RUBY_VERSIONS; do \
+                rbenv install $version; \
+            done \
+            && rbenv global $DEFAULT_RUBY \
+            && rbenv rehash \
+        '; \
     fi
 
 

@@ -414,37 +414,36 @@ sync_repo() {
                             fi
                         fi
                         
-                        if [ "$RUBY_READY" = "false" ]; then
-                            log_warn "Ruby/bundler not ready. Skipping bundle install."
-                            log_warn "  (Ruby may still be installing. dev_startup.sh will handle bundle install.)"
-                            continue
-                        fi
-                        
-                        # Handle Gemfile.lock merge conflicts
-                        if [ -f "Gemfile.lock" ]; then
-                            if grep -q "^<<<<<<< " "Gemfile.lock" 2>/dev/null || \
-                               grep -q "^=======$" "Gemfile.lock" 2>/dev/null || \
-                               grep -q "^>>>>>>> " "Gemfile.lock" 2>/dev/null; then
-                                log_warn "Detected merge conflict markers in Gemfile.lock. Removing to allow regeneration..."
-                                rm -f Gemfile.lock
+                        if [ "$RUBY_READY" = "true" ]; then
+                            # Handle Gemfile.lock merge conflicts
+                            if [ -f "Gemfile.lock" ]; then
+                                if grep -q "^<<<<<<< " "Gemfile.lock" 2>/dev/null || \
+                                   grep -q "^=======$" "Gemfile.lock" 2>/dev/null || \
+                                   grep -q "^>>>>>>> " "Gemfile.lock" 2>/dev/null; then
+                                    log_warn "Detected merge conflict markers in Gemfile.lock. Removing to allow regeneration..."
+                                    rm -f Gemfile.lock
+                                fi
                             fi
-                        fi
-                        
-                        # Run bundle install
-                        if bundle install --jobs=4 --retry=3 2>&1; then
-                            log_info "Bundle install completed successfully"
-                            echo "$CURRENT_GEMFILE_HASH" > "$GEMFILE_HASH_FILE"
-                        else
-                            log_warn "Bundle install failed. Attempting hard rebuild..."
-                            rm -f Gemfile.lock
-                            rm -rf vendor/bundle .bundle 2>/dev/null || true
+                            
+                            # Run bundle install
                             if bundle install --jobs=4 --retry=3 2>&1; then
-                                log_info "Bundle install completed after hard rebuild"
+                                log_info "Bundle install completed successfully"
                                 echo "$CURRENT_GEMFILE_HASH" > "$GEMFILE_HASH_FILE"
                             else
-                                log_warn "Bundle install failed even after hard rebuild"
-                                log_warn "  (dev_startup.sh will retry on next app restart)"
+                                log_warn "Bundle install failed. Attempting hard rebuild..."
+                                rm -f Gemfile.lock
+                                rm -rf vendor/bundle .bundle 2>/dev/null || true
+                                if bundle install --jobs=4 --retry=3 2>&1; then
+                                    log_info "Bundle install completed after hard rebuild"
+                                    echo "$CURRENT_GEMFILE_HASH" > "$GEMFILE_HASH_FILE"
+                                else
+                                    log_warn "Bundle install failed even after hard rebuild"
+                                    log_warn "  (dev_startup.sh will retry on next app restart)"
+                                fi
                             fi
+                        else
+                            log_warn "Ruby/bundler not ready. Skipping bundle install."
+                            log_warn "  (Ruby may still be installing. dev_startup.sh will handle bundle install.)"
                         fi
                     fi
                 fi
