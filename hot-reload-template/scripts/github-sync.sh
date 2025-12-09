@@ -221,7 +221,7 @@ sync_repo() {
                         # Proactively handle lock files since they'll be regenerated anyway
                         # This prevents pull failures due to local modifications
                         LOCK_FILES_MODIFIED=false
-                        for lockfile in package-lock.json go.sum uv.lock poetry.lock; do
+                        for lockfile in package-lock.json go.sum uv.lock poetry.lock Gemfile.lock; do
                             if git diff --quiet "$lockfile" 2>/dev/null; then
                                 continue  # File not modified
                             fi
@@ -268,6 +268,10 @@ sync_repo() {
                             log_info "Resolving poetry.lock conflict..."
                             git checkout -- poetry.lock 2>/dev/null || rm -f poetry.lock 2>/dev/null || true
                         fi
+                        if echo "$PULL_OUTPUT" | grep -q "Gemfile.lock"; then
+                            log_info "Resolving Gemfile.lock conflict..."
+                            git checkout -- Gemfile.lock 2>/dev/null || rm -f Gemfile.lock 2>/dev/null || true
+                        fi
                         # Try pull again after resolving conflicts
                         if git pull origin "$CURRENT_BRANCH" 2>&1; then
                             log_info "Successfully pulled after resolving lock file conflicts"
@@ -277,7 +281,7 @@ sync_repo() {
                     elif echo "$PULL_OUTPUT" | grep -qi "cannot pull with rebase\|cannot pull\|your local changes"; then
                         # Another common error - local changes preventing pull
                         log_warn "Local changes preventing pull. Attempting to reset lock files and retry..."
-                        for lockfile in package-lock.json go.sum uv.lock poetry.lock; do
+                        for lockfile in package-lock.json go.sum uv.lock poetry.lock Gemfile.lock; do
                             if [ -f "$lockfile" ] && ! git diff --quiet "$lockfile" 2>/dev/null; then
                                 log_info "Resetting $lockfile to allow pull..."
                                 git checkout -- "$lockfile" 2>/dev/null || rm -f "$lockfile"
@@ -332,7 +336,7 @@ sync_repo() {
         # Check for any remaining merge conflict markers in lock files
         if [ -d "$WORKSPACE/.git" ]; then
             cd "$WORKSPACE"
-            for lockfile in package-lock.json go.sum uv.lock poetry.lock; do
+            for lockfile in package-lock.json go.sum uv.lock poetry.lock Gemfile.lock; do
                 if [ -f "$lockfile" ]; then
                     if grep -q "^<<<<<<< " "$lockfile" 2>/dev/null || \
                        grep -q "^======= " "$lockfile" 2>/dev/null || \
@@ -349,6 +353,86 @@ sync_repo() {
             CURRENT_COMMIT=$(git rev-parse --short HEAD)
             COMMIT_MSG=$(git log -1 --pretty=%B)
             log_info "Current commit: $CURRENT_COMMIT - $COMMIT_MSG"
+        fi
+
+        # Auto-install dependencies if dependency files changed
+        if [ -d "$WORKSPACE/.git" ]; then
+            cd "$WORKSPACE"
+            
+            # Ruby/Bundler: Check if Gemfile or Gemfile.lock changed
+            if [ -f "Gemfile" ]; then
+                GEMFILE_HASH_FILE="/tmp/github_sync_gemfile_hash.txt"
+                CURRENT_GEMFILE_HASH=$(md5sum Gemfile 2>/dev/null | cut -d' ' -f1 || echo "")
+                
+                if [ -n "$CURRENT_GEMFILE_HASH" ]; then
+                    PREVIOUS_HASH=$(cat "$GEMFILE_HASH_FILE" 2>/dev/null || echo "")
+                    # Also check if Gemfile.lock is missing or has conflicts (indicates need for bundle install)
+                    NEEDS_BUNDLE_INSTALL=false
+                    if [ "$CURRENT_GEMFILE_HASH" != "$PREVIOUS_HASH" ]; then
+                        NEEDS_BUNDLE_INSTALL=true
+                        log_info "Detected Gemfile changes. Running bundle install..."
+                    elif [ ! -f "Gemfile.lock" ]; then
+                        NEEDS_BUNDLE_INSTALL=true
+                        log_info "Gemfile.lock missing. Running bundle install..."
+                    elif grep -q "^<<<<<<< " "Gemfile.lock" 2>/dev/null || \
+                         grep -q "^=======$" "Gemfile.lock" 2>/dev/null || \
+                         grep -q "^>>>>>>> " "Gemfile.lock" 2>/dev/null; then
+                        NEEDS_BUNDLE_INSTALL=true
+                        log_info "Gemfile.lock has merge conflicts. Running bundle install..."
+                    fi
+                    
+                    if [ "$NEEDS_BUNDLE_INSTALL" = "true" ]; then
+                        
+                        # Setup Ruby environment if rbenv is available
+                        # Try multiple common locations for rbenv
+                        RBENV_ROOT=""
+                        for rbenv_path in "$HOME/.rbenv" "/home/devcontainer/.rbenv" "/root/.rbenv"; do
+                            if [ -d "$rbenv_path" ] && [ -x "$rbenv_path/bin/rbenv" ]; then
+                                RBENV_ROOT="$rbenv_path"
+                                break
+                            fi
+                        done
+                        
+                        if [ -n "$RBENV_ROOT" ]; then
+                            export RBENV_ROOT
+                            export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
+                            eval "$($RBENV_ROOT/bin/rbenv init - bash)" 2>/dev/null || true
+                        elif command -v ruby >/dev/null 2>&1 && command -v bundle >/dev/null 2>&1; then
+                            # Ruby and bundler are already in PATH
+                            log_info "Using system Ruby/bundler"
+                        else
+                            log_warn "Ruby/bundler not found. Skipping bundle install."
+                            continue
+                        fi
+                        
+                        # Handle Gemfile.lock merge conflicts
+                        if [ -f "Gemfile.lock" ]; then
+                            if grep -q "^<<<<<<< " "Gemfile.lock" 2>/dev/null || \
+                               grep -q "^=======$" "Gemfile.lock" 2>/dev/null || \
+                               grep -q "^>>>>>>> " "Gemfile.lock" 2>/dev/null; then
+                                log_warn "Detected merge conflict markers in Gemfile.lock. Removing to allow regeneration..."
+                                rm -f Gemfile.lock
+                            fi
+                        fi
+                        
+                        # Run bundle install
+                        if bundle install --jobs=4 --retry=3 2>&1; then
+                            log_info "Bundle install completed successfully"
+                            echo "$CURRENT_GEMFILE_HASH" > "$GEMFILE_HASH_FILE"
+                        else
+                            log_warn "Bundle install failed. Attempting hard rebuild..."
+                            rm -f Gemfile.lock
+                            rm -rf vendor/bundle .bundle 2>/dev/null || true
+                            if bundle install --jobs=4 --retry=3 2>&1; then
+                                log_info "Bundle install completed after hard rebuild"
+                                echo "$CURRENT_GEMFILE_HASH" > "$GEMFILE_HASH_FILE"
+                            else
+                                log_error "Bundle install failed even after hard rebuild"
+                            fi
+                        fi
+                    fi
+                fi
+            fi
         fi
     fi
 }
