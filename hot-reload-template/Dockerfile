@@ -256,21 +256,8 @@ RUN if [ "$INSTALL_RUST" = "true" ]; then \
     fi
 
 RUN if [ "$INSTALL_RUBY" = "true" ]; then \
-        # Install Ruby directly for devcontainer user (avoid path issues from copying)
-        # Install rbenv and ruby-build for devcontainer user
-        && sudo -u devcontainer bash -c " \
-            export HOME=/home/devcontainer \
-            && git clone https://github.com/rbenv/rbenv.git /home/devcontainer/.rbenv \
-            && git clone https://github.com/rbenv/ruby-build.git /home/devcontainer/.rbenv/plugins/ruby-build \
-            && cd /home/devcontainer/.rbenv && src/configure && make -C src \
-            && export PATH=\"/home/devcontainer/.rbenv/bin:\$PATH\" \
-            && eval \"\$(rbenv init -)\" \
-            && for version in $RUBY_VERSIONS; do \
-                rbenv install \$version; \
-            done \
-            && rbenv global $DEFAULT_RUBY \
-            && rbenv rehash \
-        "; \
+        cp -r /root/.rbenv /home/devcontainer/.rbenv \
+        && chown -R devcontainer:devcontainer /home/devcontainer/.rbenv; \
     fi
 
 
