@@ -258,12 +258,13 @@ RUN if [ "$INSTALL_RUST" = "true" ]; then \
 RUN if [ "$INSTALL_RUBY" = "true" ]; then \
         cp -r /root/.rbenv /home/devcontainer/.rbenv \
         && chown -R devcontainer:devcontainer /home/devcontainer/.rbenv \
-        # Fix shebang paths in Ruby binaries and scripts to use devcontainer path instead of root
+        # Fix ALL files that reference /root/.rbenv/ paths to use /home/devcontainer/.rbenv/
+        # Search all files (text and binary) and replace path references
         && if [ -d "/home/devcontainer/.rbenv/versions" ]; then \
-            find /home/devcontainer/.rbenv/versions -type f -name "*.rb" -exec sed -i "s|#!/root/.rbenv/|#!/home/devcontainer/.rbenv/|g" {} + 2>/dev/null || true \
-            && find /home/devcontainer/.rbenv/versions -type f -executable -exec grep -l "^#.*/root/.rbenv/" {} \; 2>/dev/null | while read file; do \
-                sed -i "s|/root/.rbenv/|/home/devcontainer/.rbenv/|g" "$file" 2>/dev/null || true; \
-            done; \
+            find /home/devcontainer/.rbenv/versions -type f \
+                -exec grep -l "/root/.rbenv/" {} \; 2>/dev/null | while read file; do \
+                    sed -i 's|/root/\.rbenv/|/home/devcontainer/.rbenv/|g' "$file" 2>/dev/null || true; \
+                done; \
         fi; \
     fi
 
