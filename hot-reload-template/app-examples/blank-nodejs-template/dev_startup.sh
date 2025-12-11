@@ -17,6 +17,20 @@ if [ ! -f .npmrc ]; then
   echo "legacy-peer-deps=true" > .npmrc
 fi
 
+# Function to resolve merge conflicts in lock files
+resolve_lock_conflicts() {
+  if [ -f package-lock.json ]; then
+    if grep -q "^<<<<<<< " package-lock.json 2>/dev/null || \
+       grep -q "^======= " package-lock.json 2>/dev/null || \
+       grep -q "^>>>>>>> " package-lock.json 2>/dev/null; then
+      echo "Detected merge conflict in package-lock.json. Removing and regenerating..."
+      rm -f package-lock.json
+      return 0
+    fi
+  fi
+  return 1
+}
+
 # Function for hard rebuild
 hard_rebuild() {
   echo "Performing hard rebuild: removing node_modules and package-lock.json..."
@@ -24,6 +38,9 @@ hard_rebuild() {
   echo "Reinstalling dependencies..."
   npm install
 }
+
+# Resolve any lock file conflicts before install
+resolve_lock_conflicts || true
 
 # Initial install
 echo "Installing dependencies..."
@@ -41,6 +58,20 @@ cat > .dev_run.sh <<'RUN'
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Function to resolve merge conflicts in lock files
+resolve_lock_conflicts() {
+  if [ -f package-lock.json ]; then
+    if grep -q "^<<<<<<< " package-lock.json 2>/dev/null || \
+       grep -q "^======= " package-lock.json 2>/dev/null || \
+       grep -q "^>>>>>>> " package-lock.json 2>/dev/null; then
+      echo "Detected merge conflict in package-lock.json. Removing and regenerating..."
+      rm -f package-lock.json
+      return 0
+    fi
+  fi
+  return 1
+}
+
 hard_rebuild() {
   echo "Performing hard rebuild..."
   rm -rf node_modules package-lock.json
@@ -51,6 +82,7 @@ current=$(sha256sum package.json | awk '{print $1}')
 previous=$(cat .package_hash 2>/dev/null || true)
 if [ "$current" != "$previous" ]; then
   echo "package.json changed. Reinstalling dependencies..."
+  resolve_lock_conflicts || true
   if ! npm install; then
     echo "npm install failed. Performing hard rebuild..."
     hard_rebuild
