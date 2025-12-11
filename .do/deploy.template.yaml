@@ -7,11 +7,11 @@ spec:
   # repository and runs your application for fast iteration cycles.
   #
 
-  name: dev-environment
+  name: nextjs-dev-environment
   region: syd1
 
   services:
-    - name: dev-workspace
+    - name: nextjs-workspace
       # Use Dockerfile from repository
       dockerfile_path: hot-reload-template/Dockerfile
 
@@ -62,16 +62,19 @@ spec:
           value: "true"  # Node.js/Next.js/Remix apps (optional - health server uses Go binary)
           scope: BUILD_TIME
         - key: INSTALL_PYTHON
-          value: "false"  # Python/FastAPI/Django apps
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_GOLANG
-          value: "false"  # Go apps
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_RUST
-          value: "false"  # Rust apps
+          value: "false"
+          scope: BUILD_TIME
+        - key: INSTALL_RUBY
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_POSTGRES
-          value: "true"
+          value: "false"  # Next.js doesn't need Postgres client
           scope: BUILD_TIME
         - key: INSTALL_MONGODB
           value: "false"
