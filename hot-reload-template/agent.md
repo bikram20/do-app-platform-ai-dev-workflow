@@ -1,6 +1,8 @@
 # Agent Playbook: Deploy a User App with This Dev Template
 
-Docs map: `README.md` = how humans use it, `CUSTOMIZATION.md` = how to fork/extend it, `AGENT.md` = how an agent wires it up end-to-end.
+**📖 For comprehensive system reference, see [CLAUDE.md](CLAUDE.md) first.**
+
+Docs map: `CLAUDE.md` = AI agent source of truth, `README.md` = how humans use it, `CUSTOMIZATION.md` = how to fork/extend it, `AGENT.md` = quick deployment playbook.
 
 **Essential Reference:** See [`App_Platform_Commands.md`](App_Platform_Commands.md) for all `doctl` commands needed for deployment, monitoring, and debugging.
 

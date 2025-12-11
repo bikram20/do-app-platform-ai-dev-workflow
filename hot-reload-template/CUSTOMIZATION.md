@@ -1,6 +1,8 @@
 # Customizing the Dev Template
 
-Docs map: `README.md` = use the template, `CUSTOMIZATION.md` = change the template, `AGENT.md` = automate it.
+**📖 For comprehensive system reference, see [CLAUDE.md](CLAUDE.md) first.**
+
+Docs map: `CLAUDE.md` = AI agent reference, `README.md` = use the template, `CUSTOMIZATION.md` = change the template, `AGENT.md` = automate it.
 
 ## When to Fork
 

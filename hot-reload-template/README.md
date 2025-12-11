@@ -1,5 +1,7 @@
 # DigitalOcean App Platform Dev Template
 
+> **📖 Documentation for AI Agents:** See [CLAUDE.md](CLAUDE.md) - Comprehensive reference for automated deployments
+
 **Deploy once, iterate fast.** This template continuously syncs your GitHub repo and runs your dev server—no rebuild loop.
 
 ## 🚀 Quick Deploy - Choose Your Sample App
