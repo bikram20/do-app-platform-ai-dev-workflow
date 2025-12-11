@@ -7,11 +7,11 @@ spec:
   # repository and runs your application for fast iteration cycles.
   #
 
-  name: dev-environment
+  name: nodejs-job-dev-environment
   region: syd1
 
   services:
-    - name: dev-workspace
+    - name: nodejs-workspace
       # Use Dockerfile from repository
       dockerfile_path: hot-reload-template/Dockerfile
 
@@ -32,9 +32,9 @@ spec:
       http_port: 8080
 
       # Health check configuration
-      # Points to Next.js sample app health endpoint
+      # Points to Node.js Express health endpoint
       health_check:
-        http_path: /api/health
+        http_path: /health
         initial_delay_seconds: 30
         period_seconds: 10
         timeout_seconds: 5
@@ -59,19 +59,22 @@ spec:
         # Runtime and database client installation (BUILD_TIME scope)
         # Enable only the runtimes you need for faster builds
         - key: INSTALL_NODE
-          value: "true"  # Node.js/Next.js/Remix apps (optional - health server uses Go binary)
+          value: "true"  # Node.js Express job demo app
           scope: BUILD_TIME
         - key: INSTALL_PYTHON
-          value: "false"  # Python/FastAPI/Django apps
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_GOLANG
-          value: "false"  # Go apps
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_RUST
-          value: "false"  # Rust apps
+          value: "false"
+          scope: BUILD_TIME
+        - key: INSTALL_RUBY
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_POSTGRES
-          value: "true"
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_MONGODB
           value: "false"
@@ -128,9 +131,9 @@ spec:
           scope: RUN_TIME
 
         # === Monorepo Support ===
-        # Default: Next.js sample app folder
+        # Node.js Express job demo folder
         - key: GITHUB_REPO_FOLDER
-          value: "hot-reload-template/app-examples/nextjs-sample-app"
+          value: "hot-reload-template/app-examples/nodejs-job-test"
           scope: RUN_TIME
 
         # === Branch Selection ===
@@ -150,7 +153,7 @@ spec:
           value: "bash migrate.sh"
           scope: RUN_TIME
         - key: PRE_DEPLOY_TIMEOUT
-          value: "300"
+          value: "60"  # Shorter timeout for job demo
           scope: RUN_TIME
 
         # === Post-Deploy Job Configuration ===
@@ -164,7 +167,7 @@ spec:
           value: "bash seed.sh"
           scope: RUN_TIME
         - key: POST_DEPLOY_TIMEOUT
-          value: "300"
+          value: "60"  # Shorter timeout for job demo
           scope: RUN_TIME
 
   # Optional: Add alerts
