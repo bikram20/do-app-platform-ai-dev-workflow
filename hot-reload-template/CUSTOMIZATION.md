@@ -36,6 +36,68 @@ Docs map: `CLAUDE.md` = AI agent reference, `README.md` = use the template, `CUS
   - Update `app.yaml` `health_check.http_path`/`port` if needed.
   - The built-in health is for bootstrap; point checks to your app, set `ENABLE_DEV_HEALTH=false`, and you can disable unused runtimes for smaller images.
 
+## Health Check Configuration
+
+### Understanding internal_ports
+
+**Rule:** If your health check uses a port different from `http_port`, that port MUST be listed in `internal_ports`.
+
+**Pattern A: App provides health endpoint (recommended)**
+```yaml
+# Health check on same port as app - NO internal_ports needed
+http_port: 8080
+health_check:
+  http_path: /health
+  port: 8080
+```
+
+**Pattern B: Using dev health server (blank template)**
+```yaml
+# Health check on different port - internal_ports REQUIRED
+internal_ports:
+  - 9090
+http_port: 8080
+health_check:
+  http_path: /dev_health
+  port: 9090
+```
+
+### Transitioning from Blank Template
+
+If you started with the blank template (deploy-blank) and are adding your own app:
+
+**Before (blank template):**
+```yaml
+internal_ports:
+  - 9090
+health_check:
+  http_path: /dev_health
+  port: 9090
+ENABLE_DEV_HEALTH: "true"
+```
+
+**After (your app):**
+```yaml
+# REMOVE internal_ports entirely
+health_check:
+  http_path: /health          # Your app's endpoint
+  port: 8080                  # Changed from 9090
+ENABLE_DEV_HEALTH: "false"
+```
+
+### Common Validation Error
+
+```
+Error validating app spec field "services.health_check.port":
+health check port "9090" not found in internal_ports.
+```
+
+**Fix:** Either:
+1. Add the port to `internal_ports`: `internal_ports: [9090]`
+2. OR remove `internal_ports` and change `health_check.port` to match `http_port`
+
+See [DigitalOcean Internal Routing docs](https://docs.digitalocean.com/products/app-platform/how-to/manage-internal-routing/) for details.
+
 - **Adjust sync behavior:**
   - Tweak `GITHUB_SYNC_INTERVAL` default in `scripts/github-sync.sh`.
   - Add hooks after successful sync (e.g., run `/workspaces/app/.dev-container/post-sync.sh`).

@@ -36,6 +36,62 @@ Docs map: `CLAUDE.md` = AI agent source of truth, `README.md` = how humans use i
 
 ## Reminders
 
-- Git pulls do **not** restart the app; the user’s dev server should handle reloads, or they must restart the container after dependency changes.
+- Git pulls do **not** restart the app; the user's dev server should handle reloads, or they must restart the container after dependency changes.
 - Keep tokens as secrets; never commit them. Confirm before creating repos or pushing code.
 - For deeper template changes (new runtimes, custom sync/health), hand off to `CUSTOMIZATION.md`.
+
+---
+
+## Blank Template to Production Workflow
+
+**When user starts with deploy-blank and adds their own app, follow this checklist:**
+
+### Initial State (Blank Template)
+```yaml
+internal_ports:
+  - 9090                          # For dev health server
+http_port: 8080
+health_check:
+  http_path: /dev_health
+  port: 9090
+ENABLE_DEV_HEALTH: "true"
+DEV_START_COMMAND: ""
+GITHUB_REPO_URL: ""
+```
+
+### Required Changes When Adding User's App
+
+**Configuration Checklist:**
+- [ ] **REMOVE `internal_ports`** section entirely (critical - causes validation error if left)
+- [ ] **Update `health_check.port`** from `9090` to `8080`
+- [ ] **Update `health_check.http_path`** to user's endpoint (e.g., `/health`, `/api/health`)
+- [ ] **Set `ENABLE_DEV_HEALTH`** to `"false"`
+- [ ] **Set `DEV_START_COMMAND`** to `"bash dev_startup.sh"` or user's startup command
+- [ ] **Set `GITHUB_REPO_URL`** to user's repository URL
+- [ ] **Set `GITHUB_TOKEN`** if private repo (mark as SECRET)
+- [ ] **Set appropriate `INSTALL_*`** build args for user's runtime
+
+### Final State (User's App)
+```yaml
+# internal_ports: REMOVED
+http_port: 8080
+health_check:
+  http_path: /health              # User's endpoint
+  port: 8080                      # Changed from 9090
+ENABLE_DEV_HEALTH: "false"
+DEV_START_COMMAND: "bash dev_startup.sh"
+GITHUB_REPO_URL: "https://github.com/user/repo"
+```
+
+### Common Error If Misconfigured
+```
+Error validating app spec field "services.health_check.port":
+health check port "9090" not found in internal_ports.
+```
+**Fix:** Remove `internal_ports` and update `health_check.port` to `8080`.
+
+### File Sync Reminder
+When updating configuration, ensure these files stay in sync:
+- `.do/deploy.template.yaml` (deploy button)
+- `hot-reload-template/.do/deploy.template.yaml` (reference)
+- `hot-reload-template/app.yaml` (doctl)

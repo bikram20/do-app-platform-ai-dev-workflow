@@ -68,6 +68,8 @@ Deploy your own application - just point to your GitHub repo.
 
 **After deployment:** Update environment variables in App Platform UI to point to your repository.
 
+> **Important:** When configuring your app, you'll need to update health check settings. See [CUSTOMIZATION.md](CUSTOMIZATION.md#health-check-configuration) for details on `internal_ports` configuration.
+
 ---
 
 ## How It Works
@@ -315,6 +317,7 @@ docker run -p 8080:8080 \
 
 - **Nothing starts:** Confirm `GITHUB_REPO_URL` is set and accessible, `dev_startup.sh` exists in your repo
 - **Health check fails:** Either keep `ENABLE_DEV_HEALTH=true` OR point health checks to your app and set `ENABLE_DEV_HEALTH=false`
+- **Health check port validation error:** If you see "health check port not found in internal_ports", either add the port to `internal_ports` or remove `internal_ports` and use `http_port` for health checks. See [CUSTOMIZATION.md](CUSTOMIZATION.md#health-check-configuration).
 - **Changes not visible:** Ensure your dev server supports hot reload (npm run dev, uvicorn --reload, air), or manually restart container
 - **Build takes too long:** Disable unused runtimes in build arguments
 - **npm peer dependency errors:** Use the Next.js example script which automatically creates `.npmrc` with `legacy-peer-deps=true`
