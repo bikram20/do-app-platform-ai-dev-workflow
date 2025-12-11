@@ -7,11 +7,11 @@ spec:
   # repository and runs your application for fast iteration cycles.
   #
 
-  name: dev-environment
+  name: go-dev-environment
   region: syd1
 
   services:
-    - name: dev-workspace
+    - name: go-workspace
       # Use Dockerfile from repository
       dockerfile_path: hot-reload-template/Dockerfile
 
@@ -32,10 +32,10 @@ spec:
       http_port: 8080
 
       # Health check configuration
-      # Points to Next.js sample app health endpoint
+      # Points to Go sample app health endpoint
       health_check:
-        http_path: /api/health
-        initial_delay_seconds: 30
+        http_path: /health
+        initial_delay_seconds: 120
         period_seconds: 10
         timeout_seconds: 5
         success_threshold: 1
@@ -59,19 +59,22 @@ spec:
         # Runtime and database client installation (BUILD_TIME scope)
         # Enable only the runtimes you need for faster builds
         - key: INSTALL_NODE
-          value: "true"  # Node.js/Next.js/Remix apps (optional - health server uses Go binary)
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_PYTHON
-          value: "false"  # Python/FastAPI/Django apps
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_GOLANG
-          value: "false"  # Go apps
+          value: "true"  # Go sample app
           scope: BUILD_TIME
         - key: INSTALL_RUST
-          value: "false"  # Rust apps
+          value: "false"
+          scope: BUILD_TIME
+        - key: INSTALL_RUBY
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_POSTGRES
-          value: "true"
+          value: "false"
           scope: BUILD_TIME
         - key: INSTALL_MONGODB
           value: "false"
@@ -128,9 +131,9 @@ spec:
           scope: RUN_TIME
 
         # === Monorepo Support ===
-        # Default: Next.js sample app folder
+        # Go sample app folder
         - key: GITHUB_REPO_FOLDER
-          value: "hot-reload-template/app-examples/nextjs-sample-app"
+          value: "hot-reload-template/app-examples/go-sample-app"
           scope: RUN_TIME
 
         # === Branch Selection ===
@@ -147,7 +150,7 @@ spec:
           value: "scripts/pre-deploy"
           scope: RUN_TIME
         - key: PRE_DEPLOY_COMMAND
-          value: "bash migrate.sh"
+          value: ""
           scope: RUN_TIME
         - key: PRE_DEPLOY_TIMEOUT
           value: "300"
@@ -161,7 +164,7 @@ spec:
           value: "scripts/post-deploy"
           scope: RUN_TIME
         - key: POST_DEPLOY_COMMAND
-          value: "bash seed.sh"
+          value: ""
           scope: RUN_TIME
         - key: POST_DEPLOY_TIMEOUT
           value: "300"
