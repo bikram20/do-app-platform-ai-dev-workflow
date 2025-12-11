@@ -101,7 +101,7 @@ services:
   health_check:
     failure_threshold: 5
     http_path: /health
-    initial_delay_seconds: 30
+    initial_delay_seconds: 120
     period_seconds: 10
     port: 8080
     success_threshold: 1
