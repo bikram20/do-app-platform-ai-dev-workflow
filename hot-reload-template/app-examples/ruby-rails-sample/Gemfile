@@ -74,3 +74,6 @@ group :test do
   gem "selenium-webdriver"
 end
 gem 'awesome_print', '~> 1.9'
+
+# Hot reload test: humanize gem for human-readable time
+gem 'humanize', '~> 3.1'

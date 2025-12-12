@@ -1,4 +1,5 @@
 const express = require('express');
+const dayjs = require('dayjs');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -9,7 +10,8 @@ app.get('/health', (req, res) => {
     status: 'ok',
     service: 'blank-nodejs-template',
     timestamp: new Date().toISOString(),
-    hot_reload: 'Code-only change verified!'
+    hot_reload: 'Dependency change verified!',
+    formatted_time: dayjs().format('dddd, MMMM D, YYYY h:mm A')
   });
 });
 
