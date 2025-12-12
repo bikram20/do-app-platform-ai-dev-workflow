@@ -11,8 +11,9 @@ export default function Home() {
 
   return (
     <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
-      <h1>Next.js Sample App</h1>
+      <h1>Next.js Sample App - Hot Reload Test</h1>
       <p>This is a minimal Next.js app for DigitalOcean App Platform testing.</p>
+      <p style={{color: 'green', fontWeight: 'bold'}}>HOT RELOAD TEST: Code-only change successful!</p>
       <p>Health endpoint: <code>/api/health</code></p>
       <p>Random ID (uuid): {randomId || 'generating...'}</p>
     </main>
