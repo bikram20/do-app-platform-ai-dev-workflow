@@ -9,7 +9,10 @@ app = FastAPI(title="Python FastAPI Sample")
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI sample"}
+    return {
+        "message": "Hello from FastAPI sample - Hot Reload Test",
+        "hot_reload": "CODE_ONLY_CHANGE_SUCCESS"
+    }
 
 
 @app.get("/health")
